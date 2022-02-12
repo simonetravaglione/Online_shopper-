@@ -1,0 +1,180 @@
+#############################################################################################
+###################################CARICAMENTO DATASET#######################################
+#load dataset from .csv file
+# each row mathes with each sample and each column to its respective feature
+#############################################################################################
+import csv
+
+with open("./online_shoppers_intention.csv",newline="",encoding="ISO-8859-1") as filecsv:
+    lettore=csv.reader(filecsv,delimiter=",")
+    dataset=[]
+    for row in lettore:
+        dataset.append(row)
+        
+new_dataset=[]       
+for row in dataset:
+    new_dataset.append(row)
+
+new_dataset=new_dataset[1:]
+
+#############################################################################################
+###############################NORMALIZZAZIONE DATASET#######################################
+#convert categorical features into floats
+#normalize all features in the range (0,1)
+#############################################################################################
+dataset=new_dataset
+
+for samples in dataset:
+    samples[0]=float(samples[0])/27.0
+    samples[1]=float(samples[1])/3398.75
+    samples[2]=float(samples[2])/24.0
+    samples[3]=float(samples[3])/2549.375
+    samples[4]=float(samples[4])/705.0
+    samples[5]=float(samples[5])/63973.52223
+    samples[6]=float(samples[6])/0.2
+    samples[7]=float(samples[7])/0.2
+    samples[8]=float(samples[8])/361.7637419
+    samples[9]=float(samples[9])/1.0
+    ###########################################
+    mesi=[["Gen",0],["Feb",1],["Mar",2],["Apr",3],
+          ["May",4],["June",5],["Jul",6],["Aug",7],
+          ["Sep",8],["Oct",9],["Nov",10],["Dec",11]]
+    for mese in mesi:
+        mese[1]=float(mese[1])/11.0
+    for mese in mesi:
+        if samples[10]==mese[0]:
+            samples[10]=mese[1]
+    ###########################################
+    samples[11]=float(samples[11])/8.0
+    samples[12]=float(samples[12])/13.0
+    samples[13]=float(samples[13])/9.0
+    samples[14]=float(samples[14])/20.0
+    ###########################################
+    if samples[15]=="Returning_Visitor":
+        samples[15]=0.0
+    elif samples[15]=="New_Visitor":
+        samples[15]=0.5
+    elif samples[15]=="Other":
+        samples[15]=1.0
+    ###########################################
+    if samples[16]=="FALSE":
+        samples[16]=0.0
+    elif samples[16]=="TRUE":
+        samples[16]=1.0
+    ###########################################
+    if samples[17]=="FALSE":
+        samples[17]=0.0
+    elif samples[17]=="TRUE":
+        samples[17]=1.0
+    ###########################################
+
+#############################################################################################
+##############################CREAZIONE TRAIN E TEST#########################################
+# I break down the dataset into train (75%) and test (25%)
+# I separate the targets from the dataset
+#transform the sample into an array with numpy
+#transform each samples into a vector of length 17 with numpy
+#############################################################################################
+from numpy import array
+
+tot_train_examples=int(len(dataset)*0.75)
+tot_test_examples = len(dataset)-tot_train_examples
+
+Xtrain=dataset[:tot_train_examples]
+Xtest=dataset[tot_train_examples:]
+
+ytrain=[]
+for elemento in Xtrain:
+    ytrain.append(int(elemento[-1]))
+for i in range(len(Xtrain)):
+    Xtrain[i] = Xtrain[i][:17]
+
+ytest=[]
+for elemento in Xtest:
+    ytest.append(int(elemento[-1]))
+for i in range(len(Xtest)):
+    Xtest[i] = Xtest[i][:17]
+
+Xtrain=array(Xtrain)
+ytrain=array(ytrain)
+Xtest=array(Xtest)
+ytest=array(ytest)
+
+# Reading and visualization
+width = 17
+height = 1
+channels = 1
+
+###transforms into tensor
+Xtrain = Xtrain.reshape(tot_train_examples, width,)
+Xtest = Xtest.reshape(tot_test_examples, width,)
+
+#############################################################################################
+##############################CONFIGURAZIONE RETE NEURALE####################################
+#load keras library
+#keras allows to implement a multilayer neural network through a sequential construction
+#the input layer will obviously consist of vectors of length 17
+# "dense" layers are layers that are completely connected to the previous layer
+#the dropout maintains the elasticity of the mesh to reduce the overfitting effect
+#in this part we have modeled the "shape" of the neural network
+#############################################################################################
+
+
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten, BatchNormalization
+
+model=Sequential()
+model.add(Dense(1024,activation='relu',input_shape=(width,)))
+model.add(Dropout(0.4))
+model.add(Dense(128,activation='sigmoid'))
+model.add(Dropout(0.4))
+model.add(Dense(1,activation='sigmoid'))
+
+#############################################################################################
+#####################################ESECUZIONE##############################################
+#compile:
+# 'binary_crossentropy' is a loss used in the case of binary classifications
+# 'adamax' is the chosen optimizer that regulates network learning
+# 'accuracy' is the metric chosen to represent the network performance in predicting
+#train:
+#we train with groups of samples (batch) of size 200 extracted from the sample, for 100 times (epochs)
+#we validate:
+#apply the network to the test dataset and evaluate its performance
+#############################################################################################
+
+model.compile(loss='binary_crossentropy',
+              optimizer='adamax',
+              metrics=['accuracy'])
+history = model.fit(Xtrain, ytrain, batch_size=200, epochs=100, verbose=1,
+                    validation_data=(Xtest, ytest))
+score = model.evaluate(Xtest, ytest, verbose=0)
+print('Test loss: ', score[0])
+print('Test accuracy: ', score[1])
+
+#############################################################################################
+#####################################GRAFICI#################################################
+#graphs of accuracy and loss for trains and tests on the ordinate axis
+# the x-axis corresponds to the past epochs
+#############################################################################################
+from matplotlib import pyplot as plt
+
+# Plot training & validation accuracy values
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.show()
+
+# Plot training & validation loss values
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.show()
+
+
+
