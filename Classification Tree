@@ -1,0 +1,304 @@
+#############################################################################################
+
+###################################CARICAMENTO DATASET#######################################
+
+#upload dataset by file .csv
+
+#each row matches with each samples and each column with each feature
+#############################################################################################
+
+import csv
+
+
+
+with open("./online_shoppers_intention.csv",newline="",encoding="ISO-8859-1") as filecsv:
+
+    lettore=csv.reader(filecsv,delimiter=",")
+
+    dataset=[]
+
+    for row in lettore:
+
+        dataset.append(row)
+
+        
+
+new_dataset=[]       
+
+for row in dataset:
+
+    new_dataset.append(row)
+
+
+
+new_dataset=new_dataset[1:]
+
+
+
+#############################################################################################
+
+###############################NORMALIZZAZIONE DATASET#######################################
+
+#convert categorical features into floats
+
+#normalize all features in the range (0,1)
+
+#############################################################################################
+
+dataset=new_dataset
+
+
+
+for samples in dataset:
+
+    samples[0]=float(samples[0])/27.0
+
+    samples[1]=float(samples[1])/3398.75
+
+    samples[2]=float(samples[2])/24.0
+
+    samples[3]=float(samples[3])/2549.375
+
+    samples[4]=float(samples[4])/705.0
+
+    samples[5]=float(samples[5])/63973.52223
+
+    samples[6]=float(samples[6])/0.2
+
+    samples[7]=float(samples[7])/0.2
+
+    samples[8]=float(samples[8])/361.7637419
+
+    samples[9]=float(samples[9])/1.0
+
+    ###########################################
+
+    mesi=[["Gen",0],["Feb",1],["Mar",2],["Apr",3],
+
+          ["May",4],["June",5],["Jul",6],["Aug",7],
+
+          ["Sep",8],["Oct",9],["Nov",10],["Dec",11]]
+
+    for mese in mesi:
+
+        mese[1]=float(mese[1])/11.0
+
+    for mese in mesi:
+
+        if samples[10]==mese[0]:
+
+            samples[10]=mese[1]
+
+    ###########################################
+
+    samples[11]=float(samples[11])/8.0
+
+    samples[12]=float(samples[12])/13.0
+
+    samples[13]=float(samples[13])/9.0
+
+    samples[14]=float(samples[14])/20.0
+
+    ###########################################
+
+    if samples[15]=="Returning_Visitor":
+
+        samples[15]=0.0
+
+    elif samples[15]=="New_Visitor":
+
+        samples[15]=0.5
+
+    elif samples[15]=="Other":
+
+        samples[15]=1.0
+
+    ###########################################
+
+    if samples[16]=="FALSE":
+
+        samples[16]=0.0
+
+    elif samples[16]=="TRUE":
+
+        samples[16]=1.0
+
+    ###########################################
+
+    if samples[17]=="FALSE":
+
+        samples[17]=0.0
+
+    elif samples[17]=="TRUE":
+
+        samples[17]=1.0
+
+    ###########################################
+
+
+
+#############################################################################################
+
+##############################CREAZIONE TRAIN E TEST#########################################
+
+# I break down the dataset into train (75%) and test (25%)
+
+# I separate the targets from the dataset
+
+#transform the sample into an array with numpy
+
+#transform each samples into a vector of length 17 with numpy
+
+#############################################################################################
+
+from numpy import array
+
+
+
+tot_train_examples=int(len(dataset)*0.75)
+
+tot_test_examples = len(dataset)-tot_train_examples
+
+
+
+Xtrain=dataset[:tot_train_examples]
+
+Xtest=dataset[tot_train_examples:]
+
+
+
+ytrain=[]
+
+for elemento in Xtrain:
+
+    ytrain.append(int(elemento[-1]))
+
+for i in range(len(Xtrain)):
+
+    Xtrain[i] = Xtrain[i][:17]
+
+
+
+ytest=[]
+
+for elemento in Xtest:
+
+    ytest.append(int(elemento[-1]))
+
+for i in range(len(Xtest)):
+
+    Xtest[i] = Xtest[i][:17]
+
+
+
+Xtrain=array(Xtrain)
+
+ytrain=array(ytrain)
+
+Xtest=array(Xtest)
+
+ytest=array(ytest)
+
+
+
+
+# reading and visualization
+
+width = 17
+
+height = 1
+
+channels = 1
+
+
+
+### transforms into a tensor
+
+Xtrain = Xtrain.reshape(tot_train_examples, width,)
+
+Xtest = Xtest.reshape(tot_test_examples, width,)
+
+
+
+############################################################
+
+########################DECISION TREE#######################
+
+
+
+#Load Libraries
+
+
+
+#import pandas as pd
+
+import sklearn
+
+from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
+
+from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
+
+
+
+# Create Decision Tree classifer object
+
+clf = DecisionTreeClassifier(criterion="entropy", max_depth=6)
+
+
+
+# Train Decision Tree Classifer
+
+clf = clf.fit(Xtrain,ytrain)
+
+
+
+#Predict the response for test dataset
+
+ypred = clf.predict(Xtest)
+
+
+
+# Model Accuracy, how often is the classifier correct?
+
+print("Accuracy:",metrics.accuracy_score(ytest, ypred))
+
+
+
+##############################################################
+
+######################TREE PLOTTING###########################
+
+from sklearn import tree
+
+import matplotlib.pyplot as plt
+
+
+
+f_n=['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17']
+
+c_n=['0','1']
+
+
+
+fig, axes = plt.subplots(nrows = 1,ncols = 1,figsize = (40,10), dpi=600)
+
+
+
+tree.plot_tree(clf,
+
+               feature_names = f_n,
+
+               class_names=c_n,
+
+               filled = True)
+
+
+
+fig.savefig('decision_tree.png')
+
+
+
+################################################################
+
+################################################################
+
